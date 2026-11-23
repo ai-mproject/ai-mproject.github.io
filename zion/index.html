@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1f9fc4">
+<meta name="robots" content="noindex">
+<title>המתכנן של ציון ✈️</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&family=Secular+One&display=swap" rel="stylesheet">
+<style>
+/* VOICE a warm, sharp travel agent in a chat; the finished trip reads like a theme-park leaflet
+   COLOUR sky teal + sunset orange on sand; ink near-black. TYPE Secular One display + Rubik text (both Hebrew)
+   LAYOUT phone first: sticky header, chat with quick-reply chips and a composer; trip = hero band, illustrated map, cards */
+:root{color-scheme:light dark;
+--bg:light-dark(#f4fafc,#0d181d);--card:light-dark(#ffffff,#14242b);--ink:light-dark(#10232b,#e8f3f6);--mut:light-dark(#587380,#9ab3bc);
+--line:light-dark(#dbeaef,#23404a);--sky:light-dark(#1f9fc4,#3cc0e3);--sky2:light-dark(#e2f5fb,#173843);--sun:#ff8a3d;--sun2:light-dark(#fff0e5,#3b2618);
+--bot:light-dark(#ffffff,#183039);--me:light-dark(#1f9fc4,#1b6c83);
+--land:light-dark(#fbefd0,#2b291e);--land2:light-dark(#f3e1b3,#363223);--road:light-dark(#fffaf0,#5f5745);--roadedge:light-dark(#e3cf9f,#4a4436);
+--tree:light-dark(#5bb85d,#3f7f41);--tree2:light-dark(#3f9a46,#2d6331);--hill:light-dark(#e6d29f,#4a4330);--water:light-dark(#8fd3ef,#2a6f8a);
+--ok:#2e9a4f;--mid:#d39a00;--no:#d9434f}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 Rubik,"Noto Sans Hebrew",Arial,sans-serif;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:var(--sky)}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:8px;padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top));
+  background:linear-gradient(135deg,#1f9fc4,#3cc0e3 60%,#ffb36b);color:#fff;box-shadow:0 2px 10px #0002}
+.brand{font-family:"Secular One",Rubik,sans-serif;font-size:20px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbtn{border:0;background:#ffffff2e;color:#fff;border-radius:999px;padding:6px 12px;font-size:14px;font-weight:500}
+.tbtn:hover{background:#ffffff45}
+.menu{position:absolute;top:100%;left:12px;background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 24px #0003;padding:6px;min-width:210px}
+.menu button{display:block;width:100%;text-align:start;border:0;background:none;padding:10px 12px;border-radius:10px}
+.menu button:hover{background:var(--sky2)}
+main{max-width:760px;margin:0 auto}
+/* chat */
+#chatView{padding:14px 12px 170px}
+.msg{display:flex;margin:8px 0}
+.msg.new{animation:pop .25s ease-out}
+.msg .b{max-width:85%;padding:10px 14px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 1px 2px #0001}
+.msg.bot .b{background:var(--bot);border:1px solid var(--line);border-start-start-radius:6px}
+.msg.user{justify-content:flex-end}
+.msg.user .b{background:var(--me);color:#fff;border-start-end-radius:6px}
+.msg.err .b{background:var(--sun2);border:1px solid var(--sun)}
+.av{width:30px;height:30px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--sky2);margin-inline-end:6px;font-size:16px;align-self:flex-end}
+@keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.typing .b{display:flex;gap:4px;align-items:center;min-height:42px}
+.typing i{width:7px;height:7px;border-radius:50%;background:var(--mut);animation:bl 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes bl{0%,80%,100%{opacity:.25}40%{opacity:1}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:6px 36px 4px 0}
+.chip{border:1.5px solid var(--sky);background:var(--card);color:var(--sky);border-radius:999px;padding:7px 14px;font-weight:500;font-size:15px}
+.chip:hover{background:var(--sky2)}
+.chip[aria-pressed=true]{background:var(--sky);color:#fff}
+.chip.go{background:var(--sun);border-color:var(--sun);color:#fff}
+.chip.go:disabled{opacity:.45}
+.retry{margin-top:8px;border:0;background:var(--sun);color:#fff;border-radius:999px;padding:6px 14px;font-weight:500}
+.ready{margin:14px 0 0;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:16px;box-shadow:0 4px 16px #0000000d}
+.ready h3{margin:0 0 8px;font-family:"Secular One",Rubik,sans-serif;font-weight:400;font-size:20px}
+.ready dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:4px 10px;font-size:15px}
+.ready dt{color:var(--mut)}
+.ready dd{margin:0}
+.ready .hint{color:var(--mut);font-size:14px;margin:10px 0}
+.big{display:block;width:100%;border:0;border-radius:16px;padding:14px;font-size:19px;font-family:"Secular One",Rubik,sans-serif;color:#fff;
+  background:linear-gradient(135deg,#ff8a3d,#ff5f7e);box-shadow:0 6px 18px #ff6a5a55}
+.big:disabled{opacity:.5}
+.link{display:block;width:100%;margin-top:8px;border:1.5px solid var(--sky);background:none;color:var(--sky);border-radius:14px;padding:10px;font-weight:500}
+#composer{position:fixed;inset-inline:0;bottom:0;z-index:15;background:linear-gradient(transparent,var(--bg) 22%);padding:22px 12px max(10px,env(safe-area-inset-bottom))}
+#composer .in{max-width:736px;margin:0 auto}
+.fill{display:block;margin:0 auto 8px;border:0;background:var(--sun2);color:light-dark(#b4540f,#ffb37a);border-radius:999px;padding:6px 14px;font-size:14px;font-weight:500}
+form{display:flex;gap:8px;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:6px 6px 6px 6px;box-shadow:0 4px 14px #0000001a}
+textarea{flex:1;border:0;background:none;color:var(--ink);font:inherit;resize:none;max-height:120px;padding:8px 10px;outline:none}
+.send{flex:none;width:42px;height:42px;border:0;border-radius:50%;background:var(--sky);color:#fff;font-size:18px;transform:scaleX(-1)}
+.send:disabled{opacity:.4}
+/* generating */
+#gen{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(4px)}
+.genbox{text-align:center;padding:24px;max-width:340px}
+.plane{font-size:54px;display:inline-block;animation:fly 2.4s ease-in-out infinite}
+@keyframes fly{0%,100%{transform:translate(0,0) rotate(-8deg)}50%{transform:translate(-14px,-10px) rotate(4deg)}}
+.genbox h2{font-family:"Secular One",Rubik,sans-serif;font-weight:400;margin:10px 0 4px}
+.bar{height:8px;border-radius:9px;background:var(--line);overflow:hidden;margin:14px 0 8px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#1f9fc4,#ff8a3d);transition:width 1s linear}
+#genStep{color:var(--mut);min-height:24px}
+/* trip */
+#tripView{padding:0 0 40px}
+.hero{background:linear-gradient(160deg,#1f9fc4,#36b7da 55%,#ffb36b);color:#fff;padding:20px 16px 26px;border-radius:0 0 28px 28px}
+.badge{display:inline-block;background:#ffffff30;border-radius:999px;padding:4px 12px;font-size:13.5px;font-weight:500}
+.badge.final{background:#ffffffeb;color:#1c7a3c}
+.hero h1{font-family:"Secular One",Rubik,sans-serif;font-weight:400;font-size:30px;line-height:1.2;margin:10px 0 4px}
+.hero .sub{opacity:.95}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.fact{background:#ffffff26;border-radius:12px;padding:6px 10px;font-size:14px}
+.fact b{display:block;font-size:17px}
+.summary{margin:14px 16px 0;font-size:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;margin:14px 12px 0;padding:16px;box-shadow:0 3px 12px #0000000a}
+.card h2{margin:0 0 10px;font-family:"Secular One",Rubik,sans-serif;font-weight:400;font-size:21px}
+.muted{color:var(--mut);font-size:14px}
+.draftnote{margin:12px 12px 0;padding:10px 14px;border-radius:14px;background:var(--sun2);border:1px solid #ffb98a;font-size:14.5px}
+.daychips{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none}
+.dchip{flex:none;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:500;white-space:nowrap}
+.dchip[aria-pressed=true]{color:#fff;border-color:transparent}
+#map{width:100%;height:auto;display:block;border-radius:16px;touch-action:manipulation}
+#map .pin{cursor:pointer;outline:none}
+#map .pin:focus-visible circle{stroke-width:6}
+#map .lbl{font:600 12px Rubik,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-width:4px;stroke-linejoin:round}
+#map .trail{stroke-dasharray:2 9;stroke-linecap:round;animation:march 1.2s linear infinite}
+@keyframes march{to{stroke-dashoffset:-22}}
+.pinfo{margin-top:10px;padding:12px;border-radius:14px;background:var(--sky2);font-size:15px}
+.pinfo b{font-size:16px}
+.nav{display:inline-block;margin-top:6px;background:var(--sky);color:#fff;text-decoration:none;border-radius:999px;padding:4px 12px;font-size:14px}
+.day{border-top:1px solid var(--line);padding:12px 0}
+.day:first-of-type{border-top:0;padding-top:0}
+.dayh{display:flex;align-items:center;gap:8px;font-weight:700;font-size:17px}
+.dot{width:12px;height:12px;border-radius:50%;flex:none}
+.stops{list-style:none;margin:8px 0 0;padding:0}
+.stops li{display:grid;grid-template-columns:52px 28px 1fr;gap:2px 6px;padding:6px 0}
+.stops .t{color:var(--mut);font-size:14px;padding-top:2px;direction:ltr;text-align:end}
+.stops .e{font-size:18px;line-height:1.3}
+.stops .n{font-weight:500}
+.stops .x{grid-column:3;color:var(--mut);font-size:14px}
+.price{display:inline-block;margin-inline-start:6px;font-size:13px;background:var(--sun2);border-radius:8px;padding:0 6px;color:light-dark(#a84c0c,#ffb37a)}
+.budget{display:grid;grid-template-columns:150px 1fr;gap:14px;align-items:center}
+.donut{width:100%}.donut svg{display:block;width:100%;height:auto}
+@media (max-width:420px){.budget{grid-template-columns:1fr}.donut{max-width:190px;margin:0 auto}}
+.legend{list-style:none;margin:0;padding:0;font-size:15px}
+.legend li{display:flex;align-items:center;gap:8px;padding:3px 0}
+.legend .v{margin-inline-start:auto;font-weight:500;direction:ltr}
+.extra{display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:start;padding:10px 0;border-top:1px solid var(--line)}
+.extra input{width:20px;height:20px;margin-top:3px;accent-color:var(--sun)}
+.verdict{border-radius:999px;padding:1px 10px;font-size:13px;font-weight:700;color:#fff;white-space:nowrap}
+.v-שווה{background:var(--ok)}.v-תלוי{background:var(--mid)}.v-לא{background:var(--no)}
+.opt{margin:8px 0}
+.opt .row{display:flex;justify-content:space-between;gap:8px;font-size:15px}
+.opt .bar{margin:4px 0 0;height:10px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px solid var(--line)}
+.check:first-of-type{border-top:0}
+.check input{width:20px;height:20px;flex:none;margin-top:2px;accent-color:var(--sky)}
+.check.done span{text-decoration:line-through;color:var(--mut)}
+ul.plain{margin:0;padding-inline-start:20px}
+ul.plain li{margin:4px 0}
+.foot{text-align:center;color:var(--mut);font-size:13px;margin:18px 12px 0}
+.empty{text-align:center;padding:60px 20px;color:var(--mut)}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">✈️ המתכנן של <span id="who">ציון</span></div>
+  <button class="tbtn" id="switchBtn" hidden></button>
+  <button class="tbtn" id="menuBtn" aria-label="תפריט" aria-expanded="false">⋯</button>
+  <div class="menu" id="menu" hidden>
+    <button id="resetBtn">🔄 לתכנן חופשה חדשה</button>
+  </div>
+</header>
+<main>
+  <section id="chatView">
+    <div id="msgs" role="log" aria-live="polite"></div>
+    <div id="readyBox"></div>
+  </section>
+  <section id="tripView" hidden></section>
+</main>
+<div id="composer">
+  <div class="in">
+    <button class="fill" id="fillBtn" type="button">⚡ תשלים בעצמך את מה שנשאר</button>
+    <form id="form">
+      <textarea id="inp" rows="1" placeholder="כתוב תשובה, או בחר למעלה…" aria-label="תשובה" maxlength="800"></textarea>
+      <button class="send" id="sendBtn" aria-label="שלח">➤</button>
+    </form>
+  </div>
+</div>
+<div id="gen" hidden>
+  <div class="genbox">
+    <div class="plane">✈️</div>
+    <h2>מתכנן לך את החופשה…</h2>
+    <div class="muted">זה לוקח עד שתי דקות. אפשר להשאיר את המסך פתוח.</div>
+    <div class="bar"><i id="genBar"></i></div>
+    <div id="genStep"></div>
+  </div>
+</div>
+<script>
+'use strict';
+const FN = 'https://enhqzgjqqyubgfysnjib.supabase.co/functions/v1/trip-ai';
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const ils = (n) => '₪' + Math.round(n).toLocaleString('he-IL');
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+const TOKEN = (location.hash.match(/[A-Za-z0-9_-]{24,64}/) || [])[0] || store.get('trip_token');
+if (TOKEN) store.set('trip_token', TOKEN);
+
+const S = { name: 'ציון', chat: [], answers: [], ready: false, draft: null, final: null };
+let busy = false, err = null, view = 'chat', day = -1, pin = null, multiSel = new Set(), seen = 0;
+
+async function api(action, extra = {}) {
+  let r;
+  try { r = await fetch(FN, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, token: TOKEN, ...extra }) }); }
+  catch { throw new Error('אין חיבור לאינטרנט — נסה שוב'); }
+  const j = await r.json().catch(() => ({}));
+  if (Array.isArray(j.chat)) Object.assign(S, j);           // the server sends the saved state with errors too
+  if (!r.ok) throw new Error(j.error || 'משהו השתבש — נסה שוב');
+  return j;
+}
+const plan = () => S.final || S.draft;
+
+// ---------- chat ----------
+function renderChat() {
+  $('who').textContent = S.name;
+  const out = [];
+  S.chat.forEach((m, i) => {
+    const n = i >= seen ? ' new' : '';
+    out.push(m.role === 'bot'
+      ? `<div class="msg bot${n}"><div class="av">🧭</div><div class="b">${esc(m.text)}</div></div>`
+      : `<div class="msg user${n}"><div class="b">${esc(m.text)}</div></div>`);
+  });
+  seen = S.chat.length;
+  const last = S.chat.at(-1);
+  if (busy) out.push('<div class="msg bot typing"><div class="av">🧭</div><div class="b"><i></i><i></i><i></i></div></div>');
+  else if (err) out.push(`<div class="msg bot err"><div class="av">⚠️</div><div class="b">${esc(err)}<br><button class="retry" id="retryBtn">נסה שוב</button></div></div>`);
+  else if (last && last.role === 'bot' && !S.ready && last.chips && last.chips.length) {
+    out.push(`<div class="chips" id="chips">${last.chips.map((c, i) => `<button class="chip" data-i="${i}" ${last.multi ? `aria-pressed="${multiSel.has(c)}"` : ''}>${esc(c)}</button>`).join('')}
+      ${last.multi ? `<button class="chip go" id="multiGo" ${multiSel.size ? '' : 'disabled'}>המשך ←</button>` : ''}</div>`);
+  }
+  $('msgs').innerHTML = out.join('');
+  const p = plan();
+  $('readyBox').innerHTML = S.ready && !busy ? `<div class="ready">
+      <h3>📋 זה מה שהבנתי</h3>
+      <dl>${S.answers.map((a) => `<dt>${esc(a.q)}</dt><dd>${esc(a.a)}</dd>`).join('')}</dl>
+      <div class="hint">רוצה לשנות משהו? פשוט כתוב לי למטה.</div>
+      <button class="big" id="genBtn">✨ ${S.draft ? 'צור חופשה מחדש' : 'צור חופשה'}</button>
+      ${p ? '<button class="link" id="goTrip">🗺️ לחופשה שלך</button>' : ''}</div>` : '';
+  $('sendBtn').disabled = busy;
+  $('fillBtn').hidden = busy || S.ready || !S.chat.length;
+  const chips = $('chips');
+  if (chips) chips.onclick = (e) => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    if (b.id === 'multiGo') { const t = [...multiSel].join(', '); multiSel = new Set(); send(t); return; }
+    const c = last.chips[+b.dataset.i];
+    if (!last.multi) return send(c);
+    multiSel.has(c) ? multiSel.delete(c) : multiSel.add(c);
+    renderChat();
+  };
+  if ($('retryBtn')) $('retryBtn').onclick = () => send('');
+  if ($('genBtn')) $('genBtn').onclick = generate;
+  if ($('goTrip')) $('goTrip').onclick = () => show('trip');
+  syncHeader();
+  requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
+}
+
+async function send(text, fill = false) {
+  if (busy) return;
+  text = (text || '').trim();
+  busy = true; err = null;
+  if (text) { S.chat.push({ role: 'user', text }); S.ready = false; }
+  renderChat();
+  try { await api('chat', text ? { message: text } : fill ? { fill_in: true } : {}); }
+  catch (e) { err = e.message; }
+  busy = false; renderChat();
+}
+
+$('form').onsubmit = (e) => {
+  e.preventDefault();
+  const t = $('inp').value.trim();
+  if (!t || busy) return;
+  const last = S.chat.at(-1);
+  const picked = last && last.multi && multiSel.size ? [...multiSel].join(', ') + ', ' : '';
+  multiSel = new Set(); $('inp').value = ''; grow();
+  send(picked + t);
+};
+const grow = () => { const i = $('inp'); i.style.height = 'auto'; i.style.height = Math.min(i.scrollHeight, 120) + 'px'; };
+$('inp').oninput = grow;
+$('inp').onkeydown = (e) => { if (e.key === 'Enter' && !e.shiftKey && !matchMedia('(pointer:coarse)').matches) { e.preventDefault(); $('form').requestSubmit(); } };
+$('fillBtn').onclick = () => send('', true);
+
+// ---------- generate ----------
+const STEPS = ['בוחר יעד ותאריכים מתאימים…', 'בונה מסלול יום אחרי יום…', 'מחשב תקציב…', 'מחפש אוכל כשר ושבת…', 'בודק מה שווה ומה לא…', 'מצייר לך מפה…', 'עוד רגע…'];
+async function generate() {
+  if (busy) return;
+  busy = true; $('gen').hidden = false;
+  let i = 0, t0 = Date.now();
+  const tick = () => { $('genStep').textContent = STEPS[Math.min(i++, STEPS.length - 1)]; $('genBar').style.width = Math.min(95, (Date.now() - t0) / 1200) + '%'; };
+  tick(); const timer = setInterval(tick, 9000), bar = setInterval(() => { $('genBar').style.width = Math.min(95, (Date.now() - t0) / 1200) + '%'; }, 1000);
+  try { await api('generate'); day = -1; pin = null; busy = false; show('trip'); }
+  catch (e) { busy = false; err = e.message; renderChat(); }
+  clearInterval(timer); clearInterval(bar); $('gen').hidden = true;
+}
+
+// ---------- views ----------
+function show(v) {
+  view = v;
+  $('chatView').hidden = v !== 'chat'; $('composer').hidden = v !== 'chat'; $('tripView').hidden = v !== 'trip';
+  if (v === 'trip') { renderTrip(); window.scrollTo(0, 0); } else renderChat();
+  syncHeader();
+}
+function syncHeader() {
+  const b = $('switchBtn');
+  b.hidden = view === 'chat' ? !plan() : false;
+  b.textContent = view === 'chat' ? '🗺️ החופשה שלי' : '💬 לשיחה';
+}
+$('switchBtn').onclick = () => show(view === 'chat' ? 'trip' : 'chat');
+$('menuBtn').onclick = (e) => { e.stopPropagation(); const m = $('menu'); m.hidden = !m.hidden; $('menuBtn').setAttribute('aria-expanded', String(!m.hidden)); $('resetBtn').dataset.sure = ''; $('resetBtn').textContent = '🔄 לתכנן חופשה חדשה'; };
+document.addEventListener('click', (e) => { if (!$('menu').hidden && !e.target.closest('#menu')) $('menu').hidden = true; });
+$('resetBtn').onclick = async () => {
+  const b = $('resetBtn');
+  if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = '⚠️ לחץ שוב — השיחה והטיוטה יימחקו'; return; }
+  $('menu').hidden = true;
+  if (busy) return;
+  try { await api('reset'); } catch (e) { err = e.message; }
+  show('chat'); if (!S.chat.length) send('');
+};
+
+// ---------- trip ----------
+const ICON = { hotel: '🏨', park: '🎢', attraction: '🎟️', nature: '🌲', animals: '🦁', food: '🍽️', kosher: '🥙', shabbat: '🕯️', shopping: '🛍️', tech: '🤖', beach: '🏖️', culture: '🏛️', transport: '🚆', other: '📍' };
+const DAYC = ['#ff7a59', '#21a99a', '#7b6cf6', '#e0a000', '#e8508a', '#3a8dde', '#4fae52', '#c2410c', '#0f8fb3', '#a855f7'];
+const CATC = { 'טיסות': '#1f9fc4', 'לינה': '#7b6cf6', 'אטרקציות': '#ff7a59', 'אוכל': '#4fae52', 'תחבורה': '#e0a000', 'ביטוח ושונות': '#94a3b8' };
+const nav = (o, dest) => 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(o.lat != null ? `${o.lat},${o.lng}` : `${o.name} ${dest || ''}`);
+const has = (o) => o && typeof o.lat === 'number' && typeof o.lng === 'number';
+const pkey = (p) => 'trip_ui_' + (p.made_at || p.title);
+function ui(p) { try { return JSON.parse(store.get(pkey(p)) || '{}'); } catch { return {}; } }
+function setUi(p, o) { store.set(pkey(p), JSON.stringify(o)); }
+
+function renderTrip() {
+  const p = plan(), T = $('tripView');
+  if (!p) { T.innerHTML = '<div class="empty">עוד אין חופשה. חוזרים לשיחה ולוחצים "צור חופשה".</div>'; return; }
+  const st = ui(p), picked = st.extras || {};
+  const base = p.budget.reduce((a, b) => a + b.amount_ils, 0);
+  const extra = p.extras.reduce((a, x, i) => a + (picked[i] && x.price_ils ? x.price_ils : 0), 0);
+  const fin = !!S.final;
+  T.innerHTML = `
+  <div class="hero">
+    <span class="badge ${fin ? 'final' : ''}">${fin ? '✅ גרסה מחקרית — מחירים ומקומות נבדקו' : '🤖 טיוטה מיידית של AI'}</span>
+    <h1>${esc(p.title)}</h1>
+    <div class="sub">${esc(p.destination)}${p.dates.text ? ' · ' + esc(p.dates.text) : ''}</div>
+    <div class="facts">
+      ${p.travelers ? `<div class="fact">מי נוסע<b>${esc(p.travelers)}</b></div>` : ''}
+      <div class="fact">ימים<b>${p.days.length}</b></div>
+      ${base ? `<div class="fact">תקציב משוער<b id="totalTop">${ils(base + extra)}</b></div>` : ''}
+    </div>
+  </div>
+  ${fin ? '' : '<div class="draftnote">זו טיוטה שה-AI הכין מיד. <b>המחירים והמקומות הם הערכה</b>, ומאיר מכין לך גרסה מחקרית עם מחירים ומקומות שנבדקו. כשתהיה מוכנה, היא תופיע כאן במקום הטיוטה.</div>'}
+  ${p.summary ? `<p class="summary">${esc(p.summary)}</p>` : ''}
+  <section class="card"><h2>🗺️ מפת החופשה</h2>
+    <div class="daychips" id="dchips"></div>
+    <div id="mapWrap"></div>
+    <div id="pinfo"></div>
+    <div class="muted" style="margin-top:6px">המפה מאוירת ולא בקנה מידה, ומראה רק את אזור החופשה. לוחצים על נקודה כדי לראות פרטים ולנווט.</div>
+  </section>
+  <section class="card" id="daysCard"><h2>📅 יום אחרי יום</h2>${p.days.map((d, i) => `
+    <div class="day" id="day${i}"><div class="dayh"><span class="dot" style="background:${DAYC[i % DAYC.length]}"></span>יום ${i + 1}${d.date ? ' · ' + esc(d.date) : ''}</div>
+      <div class="muted">${esc(d.title)}</div>
+      <ul class="stops">${d.stops.map((s) => `<li><span class="t">${esc(s.time)}</span><span class="e">${ICON[s.kind] || '📍'}</span>
+        <span class="n">${esc(s.name)}${s.price_ils ? `<span class="price">${ils(s.price_ils)}</span>` : ''}</span>
+        ${s.note || s.how ? `<span class="x">${esc(s.note)}${s.note && s.how ? ' · ' : ''}${s.how ? '🚶 ' + esc(s.how) : ''}</span>` : ''}</li>`).join('')}</ul></div>`).join('')}
+  </section>
+  ${p.budget.length ? `<section class="card"><h2>💰 תקציב</h2>
+    <div class="budget"><div class="donut" id="donut"></div><ul class="legend" id="legend"></ul></div>
+    ${p.budget_note ? `<p class="muted">${esc(p.budget_note)}</p>` : ''}
+    ${p.extras.length ? `<h2 style="margin-top:14px">⭐ שווה או לא?</h2><div class="muted">מסמנים תוספת והיא נכנסת לתקציב.</div>${p.extras.map((x, i) => `
+      <label class="extra"><input type="checkbox" data-x="${i}" ${picked[i] ? 'checked' : ''}>
+        <span><b>${esc(x.name)}</b>${x.price_ils ? `<span class="price">${ils(x.price_ils)}</span>` : ''}<br><span class="muted">${esc(x.why)}</span></span>
+        <span class="verdict v-${esc(x.verdict.split(' ')[0])}">${esc(x.verdict)}</span></label>`).join('')}` : ''}
+  </section>` : ''}
+  <section class="card"><h2>🗓️ מתי ואיך מגיעים</h2>
+    ${p.dates.text ? `<p><b>${esc(p.dates.text)}</b>${p.dates.why ? '<br>' + esc(p.dates.why) : ''}</p>` : ''}
+    ${p.base.name ? `<p>🏨 <b>לינה: ${esc(p.base.name)}</b>${p.base.area ? ' · ' + esc(p.base.area) : ''}${p.base.why ? '<br>' + esc(p.base.why) : ''}</p>` : ''}
+    ${p.flight ? `<p>✈️ ${esc(p.flight)}</p>` : ''}
+    ${p.to_airport.length ? `<h3 style="margin:12px 0 4px;font-size:17px">🚗 איך מגיעים לנתב"ג</h3>${airport(p.to_airport)}` : ''}
+  </section>
+  ${p.kosher.summary || p.kosher.places.length || p.kosher.shabbat ? `<section class="card"><h2>✡️ כשרות ושבת</h2>
+    ${p.kosher.summary ? `<p>${esc(p.kosher.summary)}</p>` : ''}
+    ${p.kosher.shabbat ? `<p>🕯️ <b>שבת:</b> ${esc(p.kosher.shabbat)}</p>` : ''}
+    ${p.kosher.places.length ? `<ul class="plain">${p.kosher.places.map((k) => `<li><b>${esc(k.name)}</b>${k.type ? ' · ' + esc(k.type) : ''}${k.note ? ' — <span class="muted">' + esc(k.note) + '</span>' : ''} <a class="nav" href="${nav(k, p.destination)}" target="_blank" rel="noopener">ניווט</a></li>`).join('')}</ul>` : ''}
+  </section>` : ''}
+  ${p.checklist.length ? `<section class="card"><h2>✅ מה צריך לעשות</h2>${p.checklist.map((c, i) => `
+    <label class="check ${(st.done || {})[i] ? 'done' : ''}"><input type="checkbox" data-c="${i}" ${(st.done || {})[i] ? 'checked' : ''}>
+      <span>${esc(c.text)}${c.when ? ` <span class="muted">· ${esc(c.when)}</span>` : ''}${c.url ? ` <a href="${esc(c.url)}" target="_blank" rel="noopener">קישור</a>` : ''}</span></label>`).join('')}</section>` : ''}
+  ${p.tips.length ? `<section class="card"><h2>💡 טיפים</h2><ul class="plain">${p.tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></section>` : ''}
+  ${p.alternatives.length ? `<section class="card"><h2>🔀 יעדים חלופיים</h2><ul class="plain">${p.alternatives.map((a) => `<li><b>${esc(a.destination)}</b> — ${esc(a.why)}</li>`).join('')}</ul></section>` : ''}
+  ${p.sources && p.sources.length ? `<section class="card"><h2>🔎 מקורות</h2><ul class="plain">${p.sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)}</a></li>`).join('')}</ul></section>` : ''}
+  <div class="foot">${fin ? 'גרסה מחקרית' : 'טיוטת AI'}${p.made_at ? ' · ' + new Date(p.made_at).toLocaleDateString('he-IL') : ''}</div>`;
+  renderDays(p); renderMap(p); renderBudget(p, picked);
+  T.onchange = (e) => {
+    const x = e.target.dataset.x, c = e.target.dataset.c, o = ui(p);
+    if (x != null) { o.extras = { ...(o.extras || {}), [x]: e.target.checked }; setUi(p, o); renderBudget(p, o.extras); }
+    if (c != null) { o.done = { ...(o.done || {}), [c]: e.target.checked }; setUi(p, o); e.target.closest('.check').classList.toggle('done', e.target.checked); }
+  };
+}
+function airport(list) {
+  const max = Math.max(...list.map((o) => o.minutes || 0), 1);
+  return list.map((o) => `<div class="opt"><div class="row"><b>${esc(o.option)}</b><span>${o.minutes ? Math.round(o.minutes) + ' דק׳' : ''}${o.cost_ils != null ? ' · ' + ils(o.cost_ils) : ''}</span></div>
+    <div class="bar"><i style="width:${o.minutes ? Math.max(6, o.minutes / max * 100) : 0}%"></i></div>${o.note ? `<div class="muted">${esc(o.note)}</div>` : ''}</div>`).join('');
+}
+function renderDays(p) {
+  $('dchips').innerHTML = [`<button class="dchip" data-d="-1" aria-pressed="${day < 0}" ${day < 0 ? 'style="background:var(--ink);color:var(--bg)"' : ''}>כל החופשה</button>`,
+    ...p.days.map((d, i) => `<button class="dchip" data-d="${i}" aria-pressed="${day === i}" ${day === i ? `style="background:${DAYC[i % DAYC.length]}"` : ''}>יום ${i + 1}</button>`)].join('');
+  $('dchips').onclick = (e) => { const b = e.target.closest('.dchip'); if (!b) return; day = +b.dataset.d; pin = null; renderDays(p); renderMap(p); };
+}
+function renderBudget(p, picked) {
+  const cats = {};
+  p.budget.forEach((b) => { cats[b.category] = (cats[b.category] || 0) + b.amount_ils; });
+  const ex = p.extras.reduce((a, x, i) => a + (picked[i] && x.price_ils ? x.price_ils : 0), 0);
+  if (ex) cats['תוספות שבחרת'] = ex;
+  const total = Object.values(cats).reduce((a, b) => a + b, 0), C = 2 * Math.PI * 60;
+  let off = 0;
+  const segs = Object.entries(cats).map(([k, v]) => { const len = v / total * C, s = `<circle r="60" cx="80" cy="80" fill="none" stroke="${CATC[k] || '#ff8a3d'}" stroke-width="26" stroke-dasharray="${len} ${C - len}" stroke-dashoffset="${-off}" transform="rotate(-90 80 80)"><title>${esc(k)}</title></circle>`; off += len; return s; });
+  if ($('donut')) $('donut').innerHTML = `<svg viewBox="0 0 160 160" role="img" aria-label="עוגת תקציב">${segs.join('')}
+    <text x="80" y="76" text-anchor="middle" font-size="13" fill="var(--mut)">סה״כ</text><text x="80" y="98" text-anchor="middle" font-size="19" font-weight="700" fill="var(--ink)">${ils(total)}</text></svg>`;
+  if ($('legend')) $('legend').innerHTML = Object.entries(cats).map(([k, v]) => `<li><span class="dot" style="background:${CATC[k] || '#ff8a3d'}"></span>${esc(k)}<span class="v">${ils(v)} · ${Math.round(v / total * 100)}%</span></li>`).join('');
+  if ($('totalTop')) $('totalTop').textContent = ils(total);
+}
+
+// illustrated park-style map: real directions, distances squashed (far day-trips stay on the page), drawn lands, roads and trails
+function renderMap(p) {
+  const W = 420, H = 400, pad = 40, top = 60;
+  const pts = [];
+  if (has(p.base)) pts.push({ ...p.base, kind: 'hotel', d: -2, base: true });
+  p.days.forEach((d, i) => d.stops.forEach((s, j) => { if (has(s)) pts.push({ ...s, d: i, j }); }));
+  p.kosher.places.forEach((k) => { if (has(k)) pts.push({ ...k, kind: 'kosher', d: -3 }); });
+  const c = has(p.base) ? p.base : pts.length ? { lat: pts.reduce((a, q) => a + q.lat, 0) / pts.length, lng: pts.reduce((a, q) => a + q.lng, 0) / pts.length } : null;
+  const km = (q) => Math.hypot((q.lat - c.lat) * 111, (q.lng - c.lng) * 111 * Math.cos(c.lat * Math.PI / 180));
+  const far = c ? pts.filter((q) => km(q) > 150) : [];                 // e.g. Ben Gurion on the way out: in the list, not on the map
+  if (far.length) pts.splice(0, pts.length, ...pts.filter((q) => !far.includes(q)));
+  if (!pts.length) { $('mapWrap').innerHTML = '<div class="muted">אין מספיק מיקומים לציור מפה.</div>'; return; }
+  const k = Math.cos(c.lat * Math.PI / 180);
+  pts.forEach((q) => { const dx = (q.lng - c.lng) * k, dy = q.lat - c.lat, r = Math.hypot(dx, dy), f = r ? Math.pow(r, 0.4) / r : 0; q.u = dx * f; q.v = -dy * f; });
+  const xs = pts.map((q) => q.u), ys = pts.map((q) => q.v);
+  const [x0, x1, y0, y1] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)];
+  const sc = Math.min((W - 2 * pad) / ((x1 - x0) || 1), (H - top - pad) / ((y1 - y0) || 1));
+  const ox = (W - (x1 - x0) * sc) / 2, oy = top + (H - top - pad - (y1 - y0) * sc) / 2;
+  pts.forEach((q) => { q.x = ox + (q.u - x0) * sc; q.y = oy + (q.v - y0) * sc; if (!isFinite(q.x)) { q.x = W / 2; q.y = (H + top) / 2; } });
+  // merge pins that land on the same spot (e.g. back to the hotel every evening)
+  const pins = [];
+  pts.forEach((q) => { const near = pins.find((o) => Math.hypot(o.x - q.x, o.y - q.y) < 8 && (o.name === q.name || o.base)); if (near) { if (!near.base && q.base) Object.assign(near, q); near.days.add(q.d); } else pins.push({ ...q, days: new Set([q.d]) }); });
+  pts.forEach((q) => { q.pin = pins.find((o) => o.days.has(q.d) && Math.hypot(o.x - q.x, o.y - q.y) < 8) || q; });
+  // spread pins that crowd each other (a few streets apart in town), then fit the page again — like a park map
+  const D = 42, fit = () => {
+    const xs = pins.map((o) => o.x), ys = pins.map((o) => o.y), a = Math.min(...xs), b = Math.max(...xs), c0 = Math.min(...ys), c1 = Math.max(...ys);
+    const s = Math.min(1, (W - 2 * pad) / ((b - a) || 1), (H - top - pad) / ((c1 - c0) || 1));
+    const dx = (W - (b - a) * s) / 2, dy = top + (H - top - pad - (c1 - c0) * s) / 2;
+    pins.forEach((o) => { o.x = dx + (o.x - a) * s; o.y = dy + (o.y - c0) * s; });
+  };
+  for (let round = 0; round < 3; round++) {
+    for (let it = 0; it < 80; it++) {
+      let moved = false;
+      for (let i = 0; i < pins.length; i++) for (let j = i + 1; j < pins.length; j++) {
+        const A = pins[i], B = pins[j]; let dx = B.x - A.x, dy = B.y - A.y, d = Math.hypot(dx, dy);
+        if (d >= D) continue;
+        if (!d) { dx = Math.cos(i + j); dy = Math.sin(i + j); d = 1; }
+        const m = (D - d) / 2 / d; A.x -= dx * m; A.y -= dy * m; B.x += dx * m; B.y += dy * m; moved = true;
+      }
+      if (!moved) break;
+    }
+    fit();
+  }
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const deco = [];
+  for (let n = 0; n < 160 && deco.length < 26; n++) {
+    const x = 20 + rnd() * (W - 40), y = top + 4 + rnd() * (H - top - 24);
+    if (pins.some((o) => Math.hypot(o.x - x, o.y - y) < 46) || deco.some((o) => Math.hypot(o.x - x, o.y - y) < 34)) continue;
+    deco.push({ x, y, t: rnd() });
+  }
+  const basePt = pins.find((o) => o.base);
+  const dayPts = (i) => pts.filter((q) => q.d === i).sort((a, b) => a.j - b.j);
+  const lands = p.days.map((d, i) => `<g opacity=".22" fill="${DAYC[i % DAYC.length]}">${dayPts(i).map((q) => `<circle cx="${q.pin.x}" cy="${q.pin.y}" r="40"/>`).join('')}</g>`).join('');
+  const roads = basePt ? p.days.map((d, i) => { const ps = dayPts(i); if (!ps.length) return ''; const mx = ps.reduce((a, q) => a + q.pin.x, 0) / ps.length, my = ps.reduce((a, q) => a + q.pin.y, 0) / ps.length;
+    if (Math.hypot(mx - basePt.x, my - basePt.y) < 20) return ''; const cx = (basePt.x + mx) / 2 + (my - basePt.y) * .18, cy = (basePt.y + my) / 2 - (mx - basePt.x) * .18;
+    return `<path d="M${basePt.x} ${basePt.y} Q${cx} ${cy} ${mx} ${my}" fill="none" stroke="var(--roadedge)" stroke-width="11" stroke-linecap="round"/><path d="M${basePt.x} ${basePt.y} Q${cx} ${cy} ${mx} ${my}" fill="none" stroke="var(--road)" stroke-width="7" stroke-linecap="round"/>`; }).join('') : '';
+  let trail = '';
+  if (day >= 0) {
+    const seq = [...(basePt ? [basePt] : []), ...dayPts(day).map((q) => q.pin)];
+    const dd = seq.map((q, i) => { if (!i) return `M${q.x} ${q.y}`; const a = seq[i - 1]; return `Q${(a.x + q.x) / 2 + (q.y - a.y) * .15} ${(a.y + q.y) / 2 - (q.x - a.x) * .15} ${q.x} ${q.y}`; }).join(' ');
+    trail = `<path class="trail" d="${dd}" fill="none" stroke="${DAYC[day % DAYC.length]}" stroke-width="4.5"/>`;
+  }
+  const on = (o) => day < 0 || o.base || o.days.has(day);
+  const pinSvg = pins.map((o, i) => {
+    const col = o.base ? '#10232b' : o.d === -3 ? '#21a99a' : DAYC[[...o.days].find((d) => d >= 0) % DAYC.length] || '#ff8a3d';
+    const num = day >= 0 && o.days.has(day) && !o.base ? dayPts(day).findIndex((q) => q.pin === o) + 1 : 0;
+    const r = o.base ? 19 : 15;
+    return `<g class="pin" data-p="${i}" opacity="${on(o) ? 1 : .28}" tabindex="0" role="button" aria-label="${esc(o.name)}">
+      <ellipse cx="${o.x}" cy="${o.y + r - 2}" rx="${r * .8}" ry="4" fill="#0002"/>
+      <circle cx="${o.x}" cy="${o.y}" r="${r}" fill="#fff" stroke="${col}" stroke-width="3.5"/>
+      <text x="${o.x}" y="${o.y + 5.5}" text-anchor="middle" font-size="${o.base ? 18 : 15}">${ICON[o.kind] || '📍'}</text>
+      ${num ? `<circle cx="${o.x + 12}" cy="${o.y - 12}" r="9" fill="${col}"/><text x="${o.x + 12}" y="${o.y - 8}" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">${num}</text>` : ''}
+      ${day >= 0 && (o.days.has(day) || o.base) ? `<text class="lbl" x="${Math.max(64, Math.min(W - 64, o.x))}" y="${o.y + r + 15}" text-anchor="middle">${esc(o.name.length > 18 ? o.name.slice(0, 17) + '…' : o.name)}</text>` : ''}</g>`;
+  }).join('');
+  const decoSvg = deco.map((o) => o.t < .55
+    ? `<g><rect x="${o.x - 1.5}" y="${o.y + 4}" width="3" height="7" fill="#8a6a3f"/><circle cx="${o.x}" cy="${o.y}" r="8" fill="var(--tree)"/><circle cx="${o.x - 3}" cy="${o.y - 3}" r="3.5" fill="var(--tree2)" opacity=".6"/></g>`
+    : o.t < .85 ? `<path d="M${o.x - 16} ${o.y + 8} Q${o.x} ${o.y - 14} ${o.x + 16} ${o.y + 8}Z" fill="var(--hill)"/>`
+    : `<ellipse cx="${o.x}" cy="${o.y}" rx="16" ry="7" fill="var(--water)" opacity=".8"/>`).join('');
+  $('mapWrap').innerHTML = `<svg id="map" viewBox="0 0 ${W} ${H}" role="img" aria-label="מפה מאוירת של ${esc(p.destination)}">
+    <rect x="0" y="0" width="${W}" height="${H}" rx="18" fill="var(--water)" opacity=".55"/>
+    <path d="M14 ${top - 6} Q${W * .25} ${top - 20} ${W / 2} ${top - 8} T${W - 14} ${top - 6} L${W - 10} ${H - 22} Q${W * .7} ${H - 8} ${W / 2} ${H - 16} T12 ${H - 20}Z" fill="var(--land)"/>
+    ${decoSvg}${lands}${roads}${trail}${pinSvg}
+    <g><rect x="${W / 2 - 130}" y="10" width="260" height="38" rx="12" fill="#ff8a3d"/><path d="M${W / 2 - 130} 29 l-14 -12 v24z M${W / 2 + 130} 29 l14 -12 v24z" fill="#e5692a"/>
+      <text x="${W / 2}" y="36" text-anchor="middle" font-family="Secular One,Rubik,sans-serif" font-size="19" fill="#fff">${esc((p.destination || p.title).slice(0, 24))}</text></g>
+    <g transform="translate(40 ${H - 44})"><circle r="18" fill="var(--card)" stroke="var(--roadedge)" stroke-width="2"/><path d="M0 -14 L5 0 L0 -3 L-5 0Z" fill="#d9434f"/><path d="M0 14 L5 0 L0 3 L-5 0Z" fill="var(--mut)"/><text y="-21" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">N</text></g>
+  </svg>`;
+  const svg = $('map');
+  const pick = (e) => { const g = e.target.closest('.pin'); if (!g) return; pin = pins[+g.dataset.p]; info(p); };
+  svg.onclick = pick; svg.onkeydown = (e) => { if (e.key === 'Enter') pick(e); };
+  info(p);
+}
+function info(p) {
+  const o = pin;
+  if (!o) { $('pinfo').innerHTML = ''; return; }
+  const days = [...o.days].filter((d) => d >= 0).map((d) => 'יום ' + (d + 1)).join(', ');
+  $('pinfo').innerHTML = `<div class="pinfo">${ICON[o.kind] || '📍'} <b>${esc(o.name)}</b>${days ? ` <span class="muted">· ${days}${o.time ? ' · <bdi>' + esc(o.time) + '</bdi>' : ''}</span>` : ''}
+    ${o.price_ils ? `<span class="price">${ils(o.price_ils)}</span>` : ''}
+    ${o.note || o.why ? `<div>${esc(o.note || o.why)}</div>` : ''}${o.how ? `<div class="muted">🚶 ${esc(o.how)}</div>` : ''}
+    <a class="nav" href="${nav(o, p.destination)}" target="_blank" rel="noopener">📍 ניווט</a></div>`;
+}
+
+// ---------- boot ----------
+async function boot() {
+  if (!TOKEN) { $('msgs').innerHTML = '<div class="empty">הקישור לא שלם. בקש ממאיר את הקישור המלא.</div>'; $('composer').hidden = true; return; }
+  busy = true; renderChat();
+  try { await api('get'); } catch (e) { busy = false; $('msgs').innerHTML = `<div class="empty">${esc(e.message)}</div>`; $('composer').hidden = true; return; }
+  busy = false;
+  if (plan()) return show('trip');
+  show('chat');
+  if (!S.chat.length || S.chat.at(-1).role === 'user') send('');
+}
+document.addEventListener('visibilitychange', async () => {        // back to the tab: pick up the researched version if it arrived
+  if (document.hidden || busy || !TOKEN) return;
+  const had = !!S.final;
+  try { await api('get'); } catch { return; }
+  if (!had && S.final && view === 'trip') renderTrip(); else if (view === 'chat') renderChat();
+});
+boot();
+</script>
+</body>
+</html>
