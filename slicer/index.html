@@ -839,16 +839,21 @@ function popup(head, body, okText, onOk) {
 }
 
 // filament rules: a spool keeps ≥ 50 g after the print; a spool of the same material and colour on the same printer can be joined as backup
-function joinCandidates(printer, slot) {
-  const sp = spoolOf(printer, slot);
-  return sp ? spools.filter(x => x.printer_id === printer && x.slot !== slot && x.material === sp.material && String(x.color_hex).toLowerCase() === String(sp.color_hex).toLowerCase()) : [];
+// any = "the colour doesn't matter": on the U1 any spool of the same material is a backup (Auto-Refill with different colours)
+function joinCandidates(printer, slot, any = false) {
+  const sp = spoolOf(printer, slot), anyOk = any && printer === "u1";
+  return sp ? spools.filter(x => x.printer_id === printer && x.slot !== slot && x.material === sp.material && (anyOk || String(x.color_hex).toLowerCase() === String(sp.color_hex).toLowerCase())) : [];
 }
 function joinTip(printer, slot, other) {
   return printer === "mk4s" ? `יש גליל זהה (חומר וצבע) ב-T${other}. אפשר לחבר אותם עם Spool join של ה-MMU3 (בהגדרות המדפסת / PrusaSlicer) — כשגליל T${slot} נגמר, המדפסת ממשיכה מ-T${other}.`
     : `יש גליל זהה (חומר וצבע) ב-T${other}. אם המדפסת תומכת במעבר אוטומטי לגליל זהה כשהגליל נגמר — אפשר לחבר ביניהם.`;
 }
-function gramsCheck(s, grams) {
+function gramsCheck(s, grams, any = false) {
   const sp = spoolOf(s.printer, s.slot), bk = s.backup_slot ? spoolOf(s.printer, s.backup_slot) : null;
+  if (sp && any && s.printer === "u1") {   // the printer moves on by itself to every spool of the same material
+    const all = spools.filter(x => x.printer_id === "u1" && x.material === sp.material), have = all.reduce((t, x) => t + Number(x.grams_left), 0);
+    return { ok: grams + SPARE <= have, msg: `ב-${all.length} גלילי ${sp.material} במדפסת יש יחד ${Math.round(have)} גרם (הצבע לא משנה — היא עוברת ביניהם לבד), וההדפסה צריכה ~${Math.round(grams)} גרם + ${SPARE} גרם רזרבה` };
+  }
   const have = Number(sp?.grams_left ?? 0) + Number(bk?.grams_left ?? 0);
   return { ok: !!sp && grams + SPARE <= have,
     msg: `${sp ? `בגליל T${s.slot} נשארו ${Math.round(sp.grams_left)} גרם` : "אין גליל מוגדר"}${bk ? ` ועוד ${Math.round(bk.grams_left)} בגליל הגיבוי T${bk.slot}` : ""}, וההדפסה צריכה ~${Math.round(grams)} גרם + ${SPARE} גרם רזרבה` };
@@ -865,11 +870,14 @@ function settingsBlock(p) {
   add("חוזק", `${s.walls} קירות · ${s.infill_pct}% מילוי ${esc(s.infill_pattern)}`);
   add("תמיכות", esc(SUPPORTS[s.supports]) + (s.brim_mm ? ` · שוליים ${s.brim_mm} מ"מ` : ""));
   if (p.est_grams != null) {
-    const enough = gramsCheck(s, p.est_grams).ok;
-    add("חומר משוער", `~${p.est_grams} גרם <span class="${enough ? "ok" : "bad"}">(${sp ? `נשארו ${Math.round(sp.grams_left)}` : "אין גליל"}${s.backup_slot ? ` + גיבוי T${s.backup_slot}` : ""})</span>`);
+    const enough = gramsCheck(s, p.est_grams, p.any_color).ok;
+    add("חומר משוער", `~${p.est_grams} גרם <span class="${enough ? "ok" : "bad"}">(${sp ? `נשארו ${Math.round(sp.grams_left)}` : "אין גליל"}${s.backup_slot ? ` + גיבוי T${s.backup_slot}` : ""}${p.any_color && s.printer === "u1" ? " + שאר הגלילים מאותו חומר" : ""})</span>`);
   }
   const join = joinCandidates(s.printer, s.slot)[0];
-  if (join && !s.backup_slot) h(`<div class="sub">🔗 ${esc(joinTip(s.printer, s.slot, join.slot))}</div>`, c);
+  if (join && !s.backup_slot && !p.any_color) h(`<div class="sub">🔗 ${esc(joinTip(s.printer, s.slot, join.slot))}</div>`, c);
+  if (s.printer === "u1" && p.owner === me.user_id && (p.status === "draft" || p.status === "returned"))   // her choice: may the U1 finish in another colour when this spool runs out?
+    c.appendChild(choices([["0", "🎨 הצבע חשוב"], ["1", "🔄 לא משנה לי הצבע"]], p.any_color ? "1" : "0",
+      v => act(async () => { await setP(p.id, { any_color: v === "1" }); go(project, p.id); })));
   if (s.why?.length) list(s.why, c);
   listCard("⚠️ סיכונים ונקודות לתשומת לב", "red", s.risks);
   listCard("💡 רעיונות לשיפור", "cyan", s.ideas);
@@ -936,7 +944,7 @@ function reviewBlock(p, s) {
     const text = notes.value.trim();
     if (status === "returned" && !text) return toast("כתוב מה לתקן");
     const sp = spoolOf(cur.printer, cur.slot), est = p.stats ? G.estimateGrams(p.stats, cur, sp ? sp.material : "PLA") : null;
-    if (status === "approved" && est != null && !gramsCheck(cur, est).ok) return toast(`${gramsCheck(cur, est).msg}. בחר גליל אחר או גליל גיבוי.`);
+    if (status === "approved" && est != null && !gramsCheck(cur, est, p.any_color).ok) return toast(`${gramsCheck(cur, est, p.any_color).msg}. בחר גליל אחר או גליל גיבוי.`);
     await setP(p.id, { status, settings: cur, admin_notes: text, reviewed_at: new Date().toISOString(), est_grams: est });
     if (lesson.checked && text) await db.add("slicer_lessons", { project_id: p.id, text });
     let sliced = status === "approved";
@@ -953,8 +961,8 @@ function actionsBlock(p, editable, s, job) {
   const admin = me.role === "admin";
   if (editable && p.settings && p.file_path) {
     const high = (p.settings.risks || []).some(r => r.level === "high");
-    const g = p.est_grams != null ? gramsCheck(p.settings, p.est_grams) : { ok: true }, sp = spoolOf(p.settings.printer, p.settings.slot);
-    const join = !g.ok && sp && joinCandidates(p.settings.printer, p.settings.slot).find(x => Number(sp.grams_left) + Number(x.grams_left) >= p.est_grams + SPARE);
+    const g = p.est_grams != null ? gramsCheck(p.settings, p.est_grams, p.any_color) : { ok: true }, sp = spoolOf(p.settings.printer, p.settings.slot);
+    const join = !g.ok && sp && joinCandidates(p.settings.printer, p.settings.slot, p.any_color).find(x => Number(sp.grams_left) + Number(x.grams_left) >= p.est_grams + SPARE);
     if (!g.ok) card(join ? "🔗 צריך לחבר גליל גיבוי" : "🧵 אין מספיק חומר בגליל", join ? "gold" : "red",
       `${g.msg}.\n${join ? `יש גליל זהה ב-T${join.slot} — מאיר יחבר אותם באישור.` : "בקשי ממאיר להחליף גליל, או בקשי המלצה חדשה."}`);
     pill("📤 שליחה לאישור מנהל", "gold", () => act(async () => {
