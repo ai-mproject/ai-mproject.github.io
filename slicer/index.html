@@ -70,6 +70,12 @@
   .spool input, .spool select { margin-top:6px; padding:9px 12px; font-size:15px; }
   .spool small { display:block; color:var(--muted); font-size:.75em; margin-top:6px; text-align:start; }
   .spool select { text-align:center; border-color:var(--gold); color:var(--gold); }
+  .printer summary { cursor:pointer; list-style:none; display:flex; align-items:center; gap:8px; font-weight:700; }
+  .printer summary::-webkit-details-marker { display:none; }
+  .printer summary .off { color:var(--muted); font-weight:400; font-size:.85em; }
+  .printer summary .chev { margin-inline-start:auto; transition:transform .2s; }
+  .printer[open] summary .chev { transform:rotate(180deg); }
+  .spool.empty { opacity:.6; border-style:dashed; }
   .toast { position:fixed; left:50%; bottom:calc(env(safe-area-inset-bottom) + 28px); transform:translateX(-50%); background:#000c; color:#fff; padding:12px 18px;
            border-radius:14px; max-width:90%; font-size:.92em; z-index:70; text-align:center; }
   #modal .back { position:fixed; inset:0; background:#000b; display:flex; align-items:center; justify-content:center; z-index:60; padding:20px; }
@@ -1031,19 +1037,31 @@ function spoolSvg(color, slot) {
     <circle cx="50" cy="50" r="17" fill="#1d2753" stroke="#9aa3c7" stroke-width="2"/><text x="50" y="56" text-anchor="middle" font-size="16" fill="#f2c45c" font-weight="700">T${slot}</text></svg>`;
 }
 function drawSpools() {
-  label("כמה גלילים יש בכל מדפסת, ומה בכל אחד. החומר יורד אוטומטית מכל הדפסה שמסומנת 'הודפס'.");
-  for (const pr of printers) {
-    const box = h(`<div class="card" style="--accent:var(--cyan)"></div>`);
+  label("לחצי על מדפסת כדי לפתוח אותה. ⭐ = מועדפת, מופיעה ראשונה. החומר יורד אוטומטית מכל הדפסה שמסומנת 'הודפס'.");
+  const fav = store.get("fav_printer");
+  for (const pr of [...printers].sort((a, b) => (b.id === fav) - (a.id === fav))) {
+    const det = h(`<details class="card printer" style="--accent:var(--cyan)"><summary>${pr.id === fav ? "⭐ " : ""}🖨️ ${esc(pr.name)}${pr.enabled === false ? ` <span class="off">· לא שמישה</span>` : ""}<span class="chev">▾</span></summary></details>`);
+    const box = h(`<div></div>`, det);
     const mine = spools.filter(s => s.printer_id === pr.id);
-    const st = { mmu: pr.mmu, count: Math.max(1, mine.length), slots: [1, 2, 3, 4, 5].map(i => ({ material: "PLA", color_hex: "#ffffff", color_name: "", color_code: "", brand: "", product: "", grams_left: 1000, ...(mine.find(s => s.slot === i) || {}) })) };
+    const count = Math.max(1, pr.slots || 0, ...mine.map(s => s.slot));
+    const st = { mmu: pr.mmu, count, slots: [1, 2, 3, 4, 5].map(i => { const s = mine.find(x => x.slot === i);
+      return { material: "PLA", color_hex: "#ffffff", color_name: "", color_code: "", brand: "", product: "", grams_left: 1000, ...(s || {}), empty: !s && i <= count }; }) };
     drawPrinter(box, pr, st);
   }
 }
 function drawPrinter(box, pr, st) {
   const max = pr.id === "mk4s" ? (st.mmu ? 5 : 1) : 4;
   st.count = Math.min(st.count, max);
-  box.innerHTML = `<b>🖨️ ${esc(pr.name)}</b>`;
+  box.innerHTML = "";
   const inner = (html) => h(html, box);
+  const fav = store.get("fav_printer") === pr.id;
+  const top = inner(`<div class="choices"><button data-v="fav" class="${fav ? "sel" : ""}">${fav ? "⭐ מועדפת" : "☆ לסמן כמועדפת"}</button>
+    <button data-v="on" class="${pr.enabled !== false ? "sel" : ""}">✅ שמישה</button><button data-v="off" class="${pr.enabled === false ? "sel" : ""}">⛔ לא שמישה</button></div>`);
+  top.querySelectorAll("button").forEach(b => b.onclick = () => act(async () => {
+    if (b.dataset.v === "fav") { store.set("fav_printer", fav ? null : pr.id); toast(fav ? "בוטל" : "⭐ תופיע ראשונה"); }
+    else { pr.enabled = b.dataset.v === "on"; await db.set(`slicer_printers?id=eq.${pr.id}`, { enabled: pr.enabled }); toast(pr.enabled ? "שמישה — ה-AI יכול לבחור בה" : "לא שמישה — ה-AI לא ישתמש בה"); }
+    go(home, "spools");
+  }));
   if (pr.id === "mk4s") {
     const r = inner(`<div class="choices"><button data-v="1" class="${st.mmu ? "sel" : ""}">עם MMU3</button><button data-v="0" class="${st.mmu ? "" : "sel"}">בלי MMU3</button></div>`);
     r.querySelectorAll("button").forEach(b => b.onclick = () => { st.mmu = b.dataset.v === "1"; drawPrinter(box, pr, st); });
@@ -1053,6 +1071,11 @@ function drawPrinter(box, pr, st) {
   cnt.querySelectorAll("button").forEach(b => b.onclick = () => { st.count = Number(b.dataset.v); drawPrinter(box, pr, st); });
   const grid = inner(`<div class="spools"></div>`);
   st.slots.slice(0, st.count).forEach((s, i) => {
+    if (s.empty) {   // an empty slot: no spool loaded, the AI won't count on it
+      const cell = h(`<div class="spool empty">${spoolSvg("#0000", i + 1)}<small style="text-align:center">ריק</small></div>`, grid);
+      pill("+ גליל", "cyan", () => { s.empty = false; drawPrinter(box, pr, st); }, cell);
+      return;
+    }
     const cell = h(`<div class="spool">${spoolSvg(s.color_hex, i + 1)}
       <select aria-label="סוג חומר">${G.MATERIALS.map(m => `<option ${m === s.material ? "selected" : ""}>${esc(m)}</option>`).join("")}</select>
       <small>צבע</small><input type="color" value="${esc(s.color_hex)}">
@@ -1069,12 +1092,15 @@ function drawPrinter(box, pr, st) {
     brand.oninput = () => s.brand = brand.value.trim();
     product.oninput = () => s.product = product.value.trim();
     grams.oninput = () => s.grams_left = Math.max(0, Number(grams.value) || 0);
+    link("🗑️ הגליל נגמר — לרוקן", () => { s.empty = true; drawPrinter(box, pr, st); }, cell);
   });
   pill("💾 שמירה", "cyan", () => act(async () => {
-    const rows = st.slots.slice(0, st.count).map((s, i) => ({ printer_id: pr.id, slot: i + 1, material: s.material, color_hex: s.color_hex, color_name: s.color_name,
+    const rows = st.slots.slice(0, st.count).map((s, i) => ({ s, slot: i + 1 })).filter(x => !x.s.empty).map(({ s, slot }) => ({ printer_id: pr.id, slot, material: s.material, color_hex: s.color_hex, color_name: s.color_name,
       color_code: s.color_code, brand: s.brand, product: s.product, grams_left: s.grams_left, updated_at: new Date().toISOString() }));
-    await http("POST", "/rest/v1/slicer_spools?on_conflict=printer_id,slot", rows, await token(), { Prefer: "resolution=merge-duplicates,return=minimal" });
+    if (rows.length) await http("POST", "/rest/v1/slicer_spools?on_conflict=printer_id,slot", rows, await token(), { Prefer: "resolution=merge-duplicates,return=minimal" });
     await db.del(`slicer_spools?printer_id=eq.${pr.id}&slot=gt.${st.count}`);
+    const empty = st.slots.slice(0, st.count).map((s, i) => s.empty ? i + 1 : 0).filter(Boolean);
+    if (empty.length) await db.del(`slicer_spools?printer_id=eq.${pr.id}&slot=in.(${empty.join(",")})`);
     await db.set(`slicer_printers?id=eq.${pr.id}`, { mmu: st.mmu, slots: st.count });
     pr.mmu = st.mmu; pr.slots = st.count;
     spools = await db.get("slicer_spools?select=*&order=printer_id,slot");
