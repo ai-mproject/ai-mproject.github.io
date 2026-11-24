@@ -72,6 +72,7 @@ main{max-width:760px;margin:0 auto}
 .acts{display:flex;justify-content:center;gap:8px;margin-bottom:8px}
 .fill{border:0;background:var(--sun2);color:light-dark(#b4540f,#ffb37a);border-radius:999px;padding:6px 14px;font-size:14px;font-weight:500}
 .fill.sumb{background:var(--sky2);color:var(--sky)}
+.msg.bot.claude .b{flex-wrap:wrap}.msg.bot.claude small{flex-basis:100%;margin-top:4px;color:var(--mut);font-size:13px}
 .msg.bot.sum .b{max-width:94%;background:var(--sky2);border-color:var(--sky)}
 form{display:flex;gap:8px;align-items:flex-end;background:var(--card);border:1px solid var(--line);border-radius:24px;padding:6px 6px 6px 6px;box-shadow:0 4px 14px #0000001a}
 textarea{flex:1;border:0;background:none;color:var(--ink);font:inherit;resize:none;max-height:120px;padding:8px 10px;outline:none}
@@ -266,6 +267,7 @@ function renderChat() {
   seen = S.chat.length;
   const last = S.chat.at(-1);
   if (busy) out.push('<div class="msg bot typing"><div class="av">🧭</div><div class="b"><i></i><i></i><i></i></div></div>');
+  else if (S.claude === 'thinking') out.push('<div class="msg bot typing claude"><div class="av">✨</div><div class="b"><i></i><i></i><i></i><small>ה-AI הרגיל עמוס, אז Claude עונה לך — עד כ-2 דקות</small></div></div>');
   else if (err) out.push(`<div class="msg bot err"><div class="av">⚠️</div><div class="b">${esc(err)}<br><button class="retry" id="retryBtn">נסה שוב</button></div></div>`);
   else if (last && last.role === 'bot' && !S.ready && last.chips && last.chips.length) {
     out.push(`<div class="chips" id="chips">${last.chips.map((c, i) => `<button class="chip" data-i="${i}" ${last.multi ? `aria-pressed="${multiSel.has(c)}"` : ''}>${esc(c)}</button>`).join('')}
@@ -296,7 +298,22 @@ function renderChat() {
   if ($('genBtn')) $('genBtn').onclick = askChange;
   if ($('goTrip')) $('goTrip').onclick = () => show('trip');
   syncHeader();
+  watchClaude();
   requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
+}
+// Claude was woken to answer: check every few seconds until his reply is saved (a run takes a minute or two)
+let pollT = null;
+function watchClaude() {
+  if (pollT || S.claude !== 'thinking') return;
+  pollT = setInterval(async () => {
+    if (busy) return;
+    const n = S.chat.length;
+    try { await api('get'); } catch { return; }
+    if (S.claude === 'thinking' && S.chat.length === n) return;
+    clearInterval(pollT); pollT = null;
+    if (!S.claude && S.chat.at(-1)?.role === 'user') err = 'Claude לא הספיק לענות — נסה שוב';
+    if (view === 'chat') renderChat();
+  }, 8000);
 }
 
 async function send(text, fill = false, summarize = false) {
