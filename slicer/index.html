@@ -878,6 +878,12 @@ function settingsBlock(p) {
   if (s.printer === "u1" && p.owner === me.user_id && (p.status === "draft" || p.status === "returned"))   // her choice: may the U1 finish in another colour when this spool runs out?
     c.appendChild(choices([["0", "🎨 הצבע חשוב"], ["1", "🔄 לא משנה לי הצבע"]], p.any_color ? "1" : "0",
       v => act(async () => { await setP(p.id, { any_color: v === "1" }); go(project, p.id); })));
+  if (p.plan?.parts?.length > 1) {   // several parts: all on one plate as it fits, or one part at a time
+    if (p.owner === me.user_id && (p.status === "draft" || p.status === "returned"))
+      c.appendChild(choices([["0", "🧩 הכול במשטח אחד"], ["1", "🪜 חלק-חלק בשלבים"]], p.split_parts ? "1" : "0",
+        v => act(async () => { await setP(p.id, { split_parts: v === "1" }); go(project, p.id); })));
+    else add("חלקים", p.split_parts ? `🪜 ${p.plan.parts.length} הדפסות, חלק-חלק` : `🧩 ${p.plan.parts.length} חלקים במשטח אחד`);
+  }
   if (s.why?.length) list(s.why, c);
   listCard("⚠️ סיכונים ונקודות לתשומת לב", "red", s.risks);
   listCard("💡 רעיונות לשיפור", "cyan", s.ideas);
@@ -1006,6 +1012,13 @@ function gcodeCard(p) {
     add(`חומר ${t}`, `${sp ? `<span class="dot" style="background:${esc(sp.color_hex)}"></span>` : ""}${Math.round(g)} גרם <span class="${ok ? "ok" : "bad"}">(${sp ? `נשארו ${Math.round(sp.grams_left)}` : "אין גליל"})</span>`);
   }
   if (m.slicer?.name) add("נחתך ב", esc(`${m.slicer.name} ${m.slicer.version || ""}`));
+  if (m.parts?.length > 1) {   // printed in stages: a file per part, one after the other
+    m.parts.forEach((x, i) => pill(`📥 שלב ${i + 1} מתוך ${m.parts.length} · ${Math.round(x.grams)} גרם${x.time_min != null ? " · " + hhmm(x.time_min) : ""}`, "green", () => act(async () => {
+      await saveFile(x.gcode_path, x.gcode_name);
+      toast("ההורדה התחילה ✓ " + x.gcode_name);
+    }), c));
+    return;
+  }
   pill("📥 הורדה לטלפון", "green", () => act(async () => {
     const name = p.gcode_name || p.gcode_path.split("/").pop();
     await saveFile(p.gcode_path, name);
