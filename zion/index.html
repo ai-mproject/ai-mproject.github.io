@@ -145,6 +145,37 @@ ul.plain{margin:0;padding-inline-start:20px}
 ul.plain li{margin:4px 0}
 .foot{text-align:center;color:var(--mut);font-size:13px;margin:18px 12px 0}
 .empty{text-align:center;padding:60px 20px;color:var(--mut)}
+/* versions, sharing, backup */
+.vbar{display:flex;gap:8px;overflow-x:auto;padding:12px 12px 2px;scrollbar-width:none}
+.vchip{flex:none;display:grid;gap:1px;text-align:start;border:1.5px solid var(--line);background:var(--card);border-radius:14px;padding:8px 12px;min-width:132px;max-width:190px;font-size:13.5px}
+.vchip b{font-size:15px}
+.vchip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vchip .vs{color:var(--mut);font-size:12.5px}
+.vchip[aria-pressed=true]{border-color:var(--sky);background:var(--sky2)}
+.vacts{display:flex;flex-wrap:wrap;gap:8px;margin:12px 12px 0}
+.act{border:1.5px solid var(--sky);background:var(--card);color:var(--sky);border-radius:999px;padding:7px 14px;font-weight:500;font-size:14.5px}
+.act.on{background:#ffd54a;border-color:#e0b100;color:#5a4300}
+.chgnote{margin:12px 12px 0;padding:10px 14px;border-radius:14px;background:var(--sky2);font-size:14.5px}
+.pending{text-align:center;padding:30px 18px}
+.pending .plane{font-size:44px}
+.sheet{position:fixed;inset:0;z-index:35;display:grid;align-items:end;background:#0007}
+.sheetbox{width:100%;max-width:760px;margin:0 auto;background:var(--card);border-radius:22px 22px 0 0;padding:18px 16px max(16px,env(safe-area-inset-bottom));box-shadow:0 -6px 24px #0003}
+.sheetbox h3{margin:0 0 4px;font-family:"Secular One",Rubik,sans-serif;font-weight:400;font-size:21px}
+.sheetbox textarea{display:block;width:100%;max-height:none;margin:10px 0 12px;border:1.5px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--bg)}
+.sheetbox textarea:focus{border-color:var(--sky)}
+.toast{position:fixed;inset-inline:16px;bottom:max(18px,env(safe-area-inset-bottom));z-index:50;max-width:420px;margin:0 auto;background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 14px;text-align:center;box-shadow:0 6px 18px #0004}
+body.shared #menuBtn,body.shared #switchBtn{display:none}
+@media print{
+  :root{color-scheme:light}
+  body{background:#fff}
+  .top,#composer,#gen,#chg,#toast,#chatView,.vbar,.vacts,.daychips,.nav,#pinfo,.extra input,.check input{display:none!important}
+  #tripView{display:block!important}
+  .hero{border-radius:16px}
+  .extra{grid-template-columns:1fr auto}
+  .card{box-shadow:none}
+  .hero,.day,.opt,.check,.extra,.legend li{break-inside:avoid}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
@@ -154,6 +185,9 @@ ul.plain li{margin:4px 0}
   <button class="tbtn" id="menuBtn" aria-label="תפריט" aria-expanded="false">⋯</button>
   <div class="menu" id="menu" hidden>
     <button id="resetBtn">🔄 לתכנן חופשה חדשה</button>
+    <button id="saveBtn">💾 לשמור קובץ גיבוי</button>
+    <button id="loadBtn">📂 לטעון קובץ גיבוי</button>
+    <input type="file" id="loadInp" accept=".json,application/json" hidden>
   </div>
 </header>
 <main>
@@ -181,6 +215,16 @@ ul.plain li{margin:4px 0}
     <div id="genStep"></div>
   </div>
 </div>
+<div class="sheet" id="chg" hidden role="dialog" aria-modal="true" aria-labelledby="chgT">
+  <div class="sheetbox">
+    <h3 id="chgT"></h3>
+    <div class="muted">לא חובה. למשל: "בלי רכב", "לינה בדירה אחת", "עוד יום בפראג", "לנסות את הונגריה".</div>
+    <textarea id="chgInp" rows="3" maxlength="500" placeholder="כתוב כאן מה לשנות, או השאר ריק" aria-label="מה לשנות בגרסה"></textarea>
+    <button class="big" id="chgGo">✨ צור את הגרסה</button>
+    <button class="link" id="chgNo">ביטול</button>
+  </div>
+</div>
+<div class="toast" id="toast" role="status" hidden></div>
 <script>
 'use strict';
 const FN = 'https://enhqzgjqqyubgfysnjib.supabase.co/functions/v1/trip-ai';
@@ -188,10 +232,14 @@ const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const ils = (n) => '₪' + Math.round(n).toLocaleString('he-IL');
 const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
-const TOKEN = (location.hash.match(/[A-Za-z0-9_-]{24,64}/) || [])[0] || store.get('trip_token');
+const SHARE = (location.hash.match(/^#s=([A-Za-z0-9_-]{24,64})$/) || [])[1] || null;   // read-only link to one version (sent on WhatsApp)
+const TOKEN = SHARE ? null : (location.hash.match(/[A-Za-z0-9_-]{24,64}/) || [])[0] || store.get('trip_token');
 if (TOKEN) store.set('trip_token', TOKEN);
 
-const S = { name: 'ציון', chat: [], answers: [], ready: false, draft: null, final: null };
+const S = { name: 'ציון', chat: [], answers: [], ready: false, versions: [] };
+let cur = store.get('trip_cur');                                                     // the version on screen
+const curV = () => S.versions.find((v) => v.id === cur) || S.versions.find((v) => v.chosen) || S.versions.at(-1) || null;
+function toast(msg) { const t = $('toast'); t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 3500); }
 let busy = false, err = null, view = 'chat', day = -1, pin = null, multiSel = new Set(), seen = 0;
 
 async function api(action, extra = {}) {
@@ -203,7 +251,7 @@ async function api(action, extra = {}) {
   if (!r.ok) throw new Error(j.error || 'משהו השתבש — נסה שוב');
   return j;
 }
-const plan = () => S.final || S.draft;
+const plan = () => curV()?.plan || null;
 
 // ---------- chat ----------
 function renderChat() {
@@ -224,13 +272,13 @@ function renderChat() {
       ${last.multi ? `<button class="chip go" id="multiGo" ${multiSel.size ? '' : 'disabled'}>המשך ←</button>` : ''}</div>`);
   }
   $('msgs').innerHTML = out.join('');
-  const p = plan();
+  const nv = S.versions.length;
   $('readyBox').innerHTML = S.ready && !busy ? `<div class="ready">
       <h3>📋 זה מה שהבנתי</h3>
       <dl>${S.answers.map((a) => `<dt>${esc(a.q)}</dt><dd>${esc(a.a)}</dd>`).join('')}</dl>
       <div class="hint">רוצה לשנות משהו? פשוט כתוב לי למטה.</div>
-      <button class="big" id="genBtn">✨ ${S.draft ? 'צור חופשה מחדש' : 'צור חופשה'}</button>
-      ${p ? '<button class="link" id="goTrip">🗺️ לחופשה שלך</button>' : ''}</div>` : '';
+      <button class="big" id="genBtn">✨ ${nv ? 'צור גרסה נוספת' : 'צור חופשה'}</button>
+      ${nv ? `<button class="link" id="goTrip">🗺️ ${nv > 1 ? `הגרסאות שלך (${nv})` : 'לחופשה שלך'}</button>` : ''}</div>` : '';
   $('sendBtn').disabled = busy;
   $('fillBtn').hidden = busy || S.ready || !S.chat.length;
   $('sumBtn').hidden = busy || S.ready || !S.chat.some((m) => m.role === 'user');
@@ -245,7 +293,7 @@ function renderChat() {
     renderChat();
   };
   if ($('retryBtn')) $('retryBtn').onclick = () => send('');
-  if ($('genBtn')) $('genBtn').onclick = generate;
+  if ($('genBtn')) $('genBtn').onclick = askChange;
   if ($('goTrip')) $('goTrip').onclick = () => show('trip');
   syncHeader();
   requestAnimationFrame(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }));
@@ -279,16 +327,26 @@ $('sumBtn').onclick = () => send('סכם לי את החופשה עד כאן', fa
 
 // ---------- generate ----------
 const STEPS = ['בוחר יעד ותאריכים מתאימים…', 'בונה מסלול יום אחרי יום…', 'מחשב תקציב…', 'מחפש אוכל כשר ושבת…', 'בודק מה שווה ומה לא…', 'מצייר לך מפה…', 'עוד רגע…'];
-async function generate() {
+// every press makes a new saved version; first ask if this version should change something
+function askChange() {
+  if (busy) return;
+  $('chgT').textContent = S.versions.length ? `גרסה ${S.versions.at(-1).n + 1} — מה לשנות הפעם?` : 'לפני שאני מתכנן — רוצה לשנות או להוסיף משהו?';
+  $('chgInp').value = ''; $('chg').hidden = false; $('chgInp').focus();
+}
+$('chgNo').onclick = () => { $('chg').hidden = true; };
+$('chg').onclick = (e) => { if (e.target.id === 'chg') $('chg').hidden = true; };
+$('chgGo').onclick = () => { $('chg').hidden = true; generate($('chgInp').value.trim()); };
+async function generate(change) {
   if (busy) return;
   busy = true; $('gen').hidden = false;
   let i = 0, t0 = Date.now();
   const tick = () => { $('genStep').textContent = STEPS[Math.min(i++, STEPS.length - 1)]; $('genBar').style.width = Math.min(95, (Date.now() - t0) / 1200) + '%'; };
   tick(); const timer = setInterval(tick, 9000), bar = setInterval(() => { $('genBar').style.width = Math.min(95, (Date.now() - t0) / 1200) + '%'; }, 1000);
-  try { await api('generate'); day = -1; pin = null; busy = false; show('trip'); }
+  try { await api('generate', change ? { change } : {}); setCur(S.versions.at(-1)); busy = false; show('trip'); }
   catch (e) { busy = false; err = e.message; renderChat(); }
   clearInterval(timer); clearInterval(bar); $('gen').hidden = true;
 }
+function setCur(v) { cur = v ? v.id : null; if (cur) store.set('trip_cur', cur); day = -1; pin = null; }
 
 // ---------- views ----------
 function show(v) {
@@ -299,7 +357,7 @@ function show(v) {
 }
 function syncHeader() {
   const b = $('switchBtn');
-  b.hidden = view === 'chat' ? !plan() : false;
+  b.hidden = view === 'chat' ? !S.versions.length : false;
   b.textContent = view === 'chat' ? '🗺️ החופשה שלי' : '💬 לשיחה';
 }
 $('switchBtn').onclick = () => show(view === 'chat' ? 'trip' : 'chat');
@@ -307,11 +365,37 @@ $('menuBtn').onclick = (e) => { e.stopPropagation(); const m = $('menu'); m.hidd
 document.addEventListener('click', (e) => { if (!$('menu').hidden && !e.target.closest('#menu')) $('menu').hidden = true; });
 $('resetBtn').onclick = async () => {
   const b = $('resetBtn');
-  if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = '⚠️ לחץ שוב — השיחה והטיוטה יימחקו'; return; }
+  if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = '⚠️ לחץ שוב — השיחה תימחק (הגרסאות השמורות נשארות)'; return; }
   $('menu').hidden = true;
   if (busy) return;
   try { await api('reset'); } catch (e) { err = e.message; }
   show('chat'); if (!S.chat.length) send('');
+};
+// backup file: every saved version, can be loaded back into the page (also on another phone)
+$('saveBtn').onclick = () => {
+  $('menu').hidden = true;
+  const vs = S.versions.filter((v) => v.plan);
+  if (!vs.length) return toast('עוד אין גרסאות לשמור');
+  const data = { app: 'zion-trip', v: 1, name: S.name, saved_at: new Date().toISOString(),
+    versions: vs.map((v) => ({ n: v.n, change: v.change, chosen: v.chosen, researched: v.researched, plan: v.plan })) };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' }));
+  a.download = `חופשות-${S.name}-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  toast(`נשמר קובץ עם ${vs.length} ${vs.length > 1 ? 'גרסאות' : 'גרסה'}`);
+};
+$('loadBtn').onclick = () => { $('menu').hidden = true; $('loadInp').click(); };
+$('loadInp').onchange = async (e) => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f || busy) return;
+  let data;
+  try { data = JSON.parse(await f.text()); } catch { return toast('זה לא קובץ גיבוי של המתכנן'); }
+  if (data?.app !== 'zion-trip' || !Array.isArray(data.versions)) return toast('זה לא קובץ גיבוי של המתכנן');
+  const before = S.versions.length;
+  busy = true;
+  try { await api('import', { versions: data.versions }); setCur(S.versions.at(-1)); toast(`נטענו ${S.versions.length - before} גרסאות`); show('trip'); }
+  catch (err2) { toast(err2.message); }
+  busy = false;
 };
 
 // ---------- trip ----------
@@ -324,13 +408,59 @@ const pkey = (p) => 'trip_ui_' + (p.made_at || p.title);
 function ui(p) { try { return JSON.parse(store.get(pkey(p)) || '{}'); } catch { return {}; } }
 function setUi(p, o) { store.set(pkey(p), JSON.stringify(o)); }
 
+// version chips (when there are a few), the actions for the version on screen, and what he asked to change in it
+function vbar() {
+  if (SHARE || S.versions.length < 2) return '';
+  const cv = curV();
+  return `<div class="vbar" id="vbar" aria-label="הגרסאות שלך">${S.versions.map((v) => {
+    const p = v.plan, tot = p ? p.budget.reduce((a, b) => a + b.amount_ils, 0) : 0;
+    return `<button class="vchip" data-v="${v.id}" aria-pressed="${v.id === cv.id}"><b>גרסה ${v.n}${v.chosen ? ' ⭐' : ''}</b>
+      <span>${esc(v.change || (p ? p.destination || p.title : 'בהכנה'))}</span>
+      <span class="vs">${v.researched ? '✅ מחקרית' : v.researching ? '🔬 בהכנה' : '🤖 טיוטה'}${tot ? ' · ' + ils(tot) : ''}</span></button>`; }).join('')}</div>`;
+}
+function vacts(v) {
+  if (SHARE) return v.plan ? '<div class="vacts"><button class="act" id="pdfBtn">📄 לשמור כ-PDF</button></div>' : '';
+  return `<div class="vacts">${v.plan ? `<button class="act ${v.chosen ? 'on' : ''}" id="chooseBtn" aria-pressed="${v.chosen}">${v.chosen ? '⭐ הגרסה הנבחרת' : '☆ לבחור בגרסה הזו'}</button>
+    <button class="act" id="pdfBtn">📄 PDF</button><button class="act" id="shareBtn">🟢 לשתף בוואטסאפ</button>` : ''}
+    ${S.ready ? '<button class="act" id="moreBtn">➕ גרסה נוספת</button>' : ''}</div>
+    ${v.change ? `<div class="chgnote">🔧 בגרסה הזו ביקשת: <b>${esc(v.change)}</b></div>` : ''}`;
+}
+function bindTrip(v) {
+  if ($('vbar')) {
+    $('vbar').onclick = (e) => { const b = e.target.closest('.vchip'); if (!b) return; setCur(S.versions.find((x) => x.id === b.dataset.v)); renderTrip(); };
+    document.querySelector('.vchip[aria-pressed=true]')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }
+  if ($('chooseBtn')) $('chooseBtn').onclick = async () => {
+    if (busy) return;
+    busy = true;
+    try { await api('choose', { id: v.id }); toast(curV().chosen ? `גרסה ${v.n} סומנה כנבחרת ⭐` : 'הבחירה בוטלה'); } catch (e) { toast(e.message); }
+    busy = false; renderTrip();
+  };
+  if ($('pdfBtn')) $('pdfBtn').onclick = () => {                   // the phone's print screen → "Save as PDF"
+    const t = document.title;
+    document.title = `${v.plan.title} — גרסה ${v.n}`;
+    addEventListener('afterprint', () => { document.title = t; }, { once: true });
+    window.print();
+  };
+  if ($('shareBtn')) $('shareBtn').onclick = () => {               // read-only link: the trip only, no chat
+    const p = v.plan, url = location.origin + location.pathname + '#s=' + v.share;
+    window.open('https://wa.me/?text=' + encodeURIComponent(`✈️ ${p.title}\n${[p.destination, p.dates.text].filter(Boolean).join(' · ')}\n${url}`), '_blank', 'noopener');
+  };
+  if ($('moreBtn')) $('moreBtn').onclick = askChange;
+}
+
 function renderTrip() {
-  const p = plan(), T = $('tripView');
-  if (!p) { T.innerHTML = '<div class="empty">עוד אין חופשה. חוזרים לשיחה ולוחצים "צור חופשה".</div>'; return; }
+  const v = curV(), p = v?.plan, T = $('tripView');
+  if (!v) { T.innerHTML = '<div class="empty">עוד אין חופשה. חוזרים לשיחה ולוחצים "צור חופשה".</div>'; return; }
+  if (!p) {
+    T.innerHTML = `<div class="hero"><span class="badge">🔬 בהכנה אצל Claude</span><h1>גרסה ${v.n}</h1>
+      <div class="sub">Claude חוקר ברשת מחירים, מקומות וזמנים. בדרך כלל זה לוקח עד חצי שעה, והגרסה תופיע כאן לבד. אפשר לסגור ולחזור.</div></div>${vbar()}${vacts(v)}`;
+    return bindTrip(v);
+  }
   const st = ui(p), picked = st.extras || {};
   const base = p.budget.reduce((a, b) => a + b.amount_ils, 0);
   const extra = p.extras.reduce((a, x, i) => a + (picked[i] && x.price_ils ? x.price_ils : 0), 0);
-  const fin = !!S.final;
+  const fin = v.researched;
   T.innerHTML = `
   <div class="hero">
     <span class="badge ${fin ? 'final' : ''}">${fin ? '✅ גרסה מחקרית — מחירים ומקומות נבדקו' : '🤖 טיוטה מיידית של AI'}</span>
@@ -342,7 +472,8 @@ function renderTrip() {
       ${base ? `<div class="fact">תקציב משוער<b id="totalTop">${ils(base + extra)}</b></div>` : ''}
     </div>
   </div>
-  ${fin ? '' : '<div class="draftnote">זו טיוטה שה-AI הכין מיד. <b>המחירים והמקומות הם הערכה.</b> גרסה מחקרית, עם מחירים ומקומות שנבדקו ברשת, כבר בהכנה — בדרך כלל תוך כחצי שעה — והיא תופיע כאן במקום הטיוטה.</div>'}
+  ${vbar()}${vacts(v)}
+  ${fin ? '' : `<div class="draftnote">זו טיוטה שה-AI הכין מיד. <b>המחירים והמקומות הם הערכה.</b>${v.researching ? ' גרסה מחקרית, עם מחירים ומקומות שנבדקו ברשת, כבר בהכנה — בדרך כלל תוך כחצי שעה — והיא תופיע כאן במקום הטיוטה.' : ''}</div>`}
   ${p.summary ? `<p class="summary">${esc(p.summary)}</p>` : ''}
   <section class="card"><h2>🗺️ מפת החופשה</h2>
     <div class="daychips" id="dchips"></div>
@@ -379,12 +510,12 @@ function renderTrip() {
   ${p.checklist.length ? `<section class="card"><h2>✅ מה צריך לעשות</h2>${p.checklist.map((c, i) => `
     <label class="check ${(st.done || {})[i] ? 'done' : ''}"><input type="checkbox" data-c="${i}" ${(st.done || {})[i] ? 'checked' : ''}>
       <span>${esc(c.text)}${c.when ? ` <span class="muted">· ${esc(c.when)}</span>` : ''}${c.url ? ` <a href="${esc(c.url)}" target="_blank" rel="noopener">קישור</a>` : ''}</span></label>`).join('')}</section>` : ''}
-  ${p.questions && p.questions.length ? `<section class="card"><h2>❓ מה עוד צריך להחליט</h2><ul class="plain">${p.questions.map((q) => `<li>${esc(q)}</li>`).join('')}</ul><div class="muted">אפשר לענות בשיחה, ואז ללחוץ שוב "צור חופשה".</div></section>` : ''}
+  ${p.questions && p.questions.length ? `<section class="card"><h2>❓ מה עוד צריך להחליט</h2><ul class="plain">${p.questions.map((q) => `<li>${esc(q)}</li>`).join('')}</ul>${SHARE ? '' : '<div class="muted">אפשר לענות בשיחה וליצור גרסה נוספת.</div>'}</section>` : ''}
   ${p.tips.length ? `<section class="card"><h2>💡 טיפים</h2><ul class="plain">${p.tips.map((t) => `<li>${esc(t)}</li>`).join('')}</ul></section>` : ''}
   ${p.alternatives.length ? `<section class="card"><h2>🔀 יעדים חלופיים</h2><ul class="plain">${p.alternatives.map((a) => `<li><b>${esc(a.destination)}</b> — ${esc(a.why)}</li>`).join('')}</ul></section>` : ''}
   ${p.sources && p.sources.length ? `<section class="card"><h2>🔎 מקורות</h2><ul class="plain">${p.sources.map((s) => `<li><a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title || s.url)}</a></li>`).join('')}</ul></section>` : ''}
   <div class="foot">${fin ? 'גרסה מחקרית' : 'טיוטת AI'}${p.made_at ? ' · ' + new Date(p.made_at).toLocaleDateString('he-IL') : ''}</div>`;
-  renderDays(p); renderMap(p); renderBudget(p, picked);
+  renderDays(p); renderMap(p); renderBudget(p, picked); bindTrip(v);
   T.onchange = (e) => {
     const x = e.target.dataset.x, c = e.target.dataset.c, o = ui(p);
     if (x != null) { o.extras = { ...(o.extras || {}), [x]: e.target.checked }; setUi(p, o); renderBudget(p, o.extras); }
@@ -518,19 +649,29 @@ function info(p) {
 
 // ---------- boot ----------
 async function boot() {
+  if (SHARE) return bootShared();
   if (!TOKEN) { $('msgs').innerHTML = '<div class="empty">הקישור לא שלם. בקש ממאיר את הקישור המלא.</div>'; $('composer').hidden = true; return; }
   busy = true; renderChat();
   try { await api('get'); } catch (e) { busy = false; $('msgs').innerHTML = `<div class="empty">${esc(e.message)}</div>`; $('composer').hidden = true; return; }
   busy = false;
-  if (plan()) return show('trip');
+  if (S.versions.length) return show('trip');
   show('chat');
   if (!S.chat.length || S.chat.at(-1).role === 'user') send('');
 }
-document.addEventListener('visibilitychange', async () => {        // back to the tab: pick up the researched version if it arrived
-  if (document.hidden || busy || !TOKEN) return;
-  const had = !!S.final;
-  try { await api('get'); } catch { return; }
-  if (!had && S.final && view === 'trip') renderTrip(); else if (view === 'chat') renderChat();
+async function getShared() { const j = await api('shared', { share: SHARE }); S.name = j.name; S.versions = [j.version]; cur = j.version.id; }
+async function bootShared() {                                       // a family member's view: one version, read-only
+  document.body.classList.add('shared');
+  $('composer').hidden = true; $('chatView').hidden = true;
+  try { await getShared(); } catch (e) { $('tripView').hidden = false; $('tripView').innerHTML = `<div class="empty">${esc(e.message)}</div>`; return; }
+  $('who').parentNode.textContent = `✈️ החופשה של ${S.name}`;
+  show('trip');
+}
+const sig = () => JSON.stringify(S.versions.map((v) => [v.id, v.researched, v.chosen, v.plan?.made_at]));
+document.addEventListener('visibilitychange', async () => {        // back to the tab: pick up a researched version that arrived meanwhile
+  if (document.hidden || busy || !(TOKEN || SHARE)) return;
+  const had = sig();
+  try { await (SHARE ? getShared() : api('get')); } catch { return; }
+  if (view === 'trip') { if (sig() !== had) renderTrip(); } else renderChat();
 });
 boot();
 </script>
