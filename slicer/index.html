@@ -443,9 +443,10 @@ function statsForDb(s) {
 
 // ---------- one project: steps, 3D view, questions, recommendation, approval ----------
 async function project(id) {
-  const [[p], [wait], jobs] = await Promise.all([db.get(`slicer_projects?id=eq.${id}&select=*`), db.get(`slicer_ai_queue?project_id=eq.${id}&select=*`),
+  const [[p], [queued], jobs] = await Promise.all([db.get(`slicer_projects?id=eq.${id}&select=*`), db.get(`slicer_ai_queue?project_id=eq.${id}&select=*`),
     db.get(`slicer_jobs?project_id=eq.${id}&select=*&order=created_at.desc&limit=1`)]);
   if (!p) throw new Error("הפרויקט לא נמצא");
+  const wait = queued?.action === "critique" ? null : queued;   // the automatic model check is optional: it never holds her up
   const job = jobs[0] || null, pc = job && job.status === "queued" ? await pcOnline() : null;
   let tris = null;
   if (p.file_path) {
