@@ -424,7 +424,7 @@ function renderMap(p) {
   p.kosher.places.forEach((k) => { if (has(k)) pts.push({ ...k, kind: 'kosher', d: -3 }); });
   const c = has(p.base) ? p.base : pts.length ? { lat: pts.reduce((a, q) => a + q.lat, 0) / pts.length, lng: pts.reduce((a, q) => a + q.lng, 0) / pts.length } : null;
   const km = (q) => Math.hypot((q.lat - c.lat) * 111, (q.lng - c.lng) * 111 * Math.cos(c.lat * Math.PI / 180));
-  const far = c ? pts.filter((q) => km(q) > 150) : [];                 // e.g. Ben Gurion on the way out: in the list, not on the map
+  const far = c ? pts.filter((q) => km(q) > 600) : [];                 // e.g. Ben Gurion on the way out: in the list, not on the map (a road trip across a country stays)
   if (far.length) pts.splice(0, pts.length, ...pts.filter((q) => !far.includes(q)));
   if (!pts.length) { $('mapWrap').innerHTML = '<div class="muted">אין מספיק מיקומים לציור מפה.</div>'; return; }
   const k = Math.cos(c.lat * Math.PI / 180);
