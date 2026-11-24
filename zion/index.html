@@ -343,7 +343,12 @@ async function generate(change) {
   const tick = () => { $('genStep').textContent = STEPS[Math.min(i++, STEPS.length - 1)]; $('genBar').style.width = Math.min(95, (Date.now() - t0) / 1200) + '%'; };
   tick(); const timer = setInterval(tick, 9000), bar = setInterval(() => { $('genBar').style.width = Math.min(95, (Date.now() - t0) / 1200) + '%'; }, 1000);
   try { await api('generate', change ? { change } : {}); setCur(S.versions.at(-1)); busy = false; show('trip'); }
-  catch (e) { busy = false; err = e.message; renderChat(); }
+  catch (e) {
+    const n = S.versions.length;
+    await api('get').catch(() => {});                                // the version may be saved even if the answer got lost
+    busy = false;
+    if (S.versions.length > n) { setCur(S.versions.at(-1)); show('trip'); } else { err = e.message; renderChat(); }
+  }
   clearInterval(timer); clearInterval(bar); $('gen').hidden = true;
 }
 function setCur(v) { cur = v ? v.id : null; if (cur) store.set('trip_cur', cur); day = -1; pin = null; }
